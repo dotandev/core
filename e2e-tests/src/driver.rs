@@ -17,6 +17,7 @@ use crate::merod::Merod;
 use crate::output::OutputWriter;
 use crate::protocol::icp::IcpSandboxEnvironment;
 use crate::protocol::near::NearSandboxEnvironment;
+use crate::protocol::stellar::StellarSandboxEnvironment;
 use crate::protocol::ProtocolSandboxEnvironment;
 use crate::steps::TestScenario;
 use crate::TestEnvironment;
@@ -91,6 +92,10 @@ impl Driver {
                 ProtocolSandboxConfig::Icp(config) => {
                     let icp = IcpSandboxEnvironment::init(config.clone())?;
                     sandbox_environments.push(ProtocolSandboxEnvironment::Icp(icp));
+                }
+                ProtocolSandboxConfig::Stellar(config) => {
+                    let stellar = StellarSandboxEnvironment::init(config.clone()).await?;
+                    sandbox_environments.push(ProtocolSandboxEnvironment::Stellar(stellar));
                 }
             }
         }
