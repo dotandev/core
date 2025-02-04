@@ -4,7 +4,7 @@ use calimero_context_config::stellar::stellar_types::{
     StellarApplication, StellarCapability, StellarContextRequest, StellarContextRequestKind,
     StellarError, StellarRequestKind, StellarSignedRequest, StellarSignedRequestPayload,
 };
-use soroban_sdk::{contractimpl, Address, BytesN, Env, IntoVal, Map, Symbol, Vec};
+use soroban_sdk::{contractimpl, log, Address, BytesN, Env, IntoVal, Map, Symbol, Vec};
 
 use crate::guard::{Guard, GuardedValue};
 use crate::{Context, ContextConfig, ContextConfigArgs, ContextConfigClient};
@@ -23,7 +23,7 @@ impl ContextConfig {
         // Extract request from payload
         let request = match request {
             StellarSignedRequestPayload::Context(req) => req,
-            StellarSignedRequestPayload::Proxy(_) => return Err(StellarError::InvalidSignature),
+            StellarSignedRequestPayload::Proxy(_) => return Err(StellarError::InvalidRequest),
         };
         // Extract context_id and kind from request
         let (context_id, kind) = match request.kind {

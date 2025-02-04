@@ -1,8 +1,8 @@
 use std::fmt::Debug;
 
 use ed25519_dalek::{Signer, SigningKey};
-use soroban_sdk::xdr::ToXdr;
-use soroban_sdk::Env;
+use soroban_sdk::xdr::{ScVal, ToXdr, FromXdr};
+use soroban_sdk::{Bytes, Env, Val};
 use starknet::core::codec::Encode as StarknetEncode;
 use starknet::signers::SigningKey as StarknetSigningKey;
 use starknet_crypto::{poseidon_hash_many, Felt};
@@ -178,19 +178,38 @@ impl<'a> Method<Stellar> for Mutate<'a> {
         let env = Env::default();
         let signer_sk = SigningKey::from_bytes(&self.signing_key);
 
-        let request = StellarRequest::new(
+        // let request = StellarRequest::new(
+        //     signer_sk.verifying_key().rt()?,
+        //     StellarRequestKind::from_with_env(self.kind, &env),
+        //     self.nonce,
+        // );
+        let request = Request::new(
             signer_sk.verifying_key().rt()?,
-            StellarRequestKind::from_with_env(self.kind, &env),
+            self.kind,
             self.nonce,
         );
 
-        let signed_request_payload = StellarSignedRequestPayload::Context(request);
+        // let signed_request_payload = StellarSignedRequestPayload::Context(request);
 
+        // println!("signed_request_payload: {:#?}", signed_request_payload);
         let signed_request =
-            StellarSignedRequest::new(&env, signed_request_payload, |b| Ok(signer_sk.sign(b)))
+            StellarSignedRequest::new(&env, request, |b| Ok(signer_sk.sign(b)))
                 .map_err(|e| eyre::eyre!("Failed to sign request: {:?}", e))?;
-
-        let bytes: Vec<u8> = signed_request.to_xdr(&env).into_iter().collect();
+        // println!("signed_request: {:#?}", signed_request);
+        // let verify_res = signed_request.verify(&env).map_err(|e| eyre::eyre!("Failed to verify request: {:?}", e))?;
+        // println!("verify_res: {:#?}", verify_res);
+        let args = (signed_request,);
+        let bytes: Vec<u8> = args.to_xdr(&env).to_alloc_vec();
+        
+        // {
+        //     let env = Env::default();
+            // Convert raw bytes to Soroban Bytes
+            let env_bytes = Bytes::from_slice(&env, &bytes);
+            // Convert to array of Vals
+            let vals: soroban_sdk::Vec<ScVal> = soroban_sdk::Vec::from_xdr(&env, &env_bytes).unwrap();
+            println!("vals: {:#?}", vals);
+        // }
+        
 
         Ok(bytes)
     }

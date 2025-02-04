@@ -1,14 +1,19 @@
 extern crate alloc;
+use std::fmt::Display;
+
 use alloc::borrow::Cow;
 use alloc::vec::Vec as StdVec;
-
+use ed25519_dalek::VerifyingKey;
+use crate::types::{IntoResult, SignerId};
 use bs58;
-use soroban_sdk::xdr::ToXdr;
+use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
+use soroban_sdk::xdr::{FromXdr, ToXdr};
 use soroban_sdk::{contracterror, contracttype, Bytes, BytesN, Env, String, Vec};
-
+use ed25519_dalek::Verifier;
 use super::StellarProxyMutateRequest;
 use crate::repr::{Repr, ReprBytes, ReprError, ReprTransmute};
-use crate::types::{Application, ApplicationMetadata, ApplicationSource, Capability};
+use crate::types::{Application, ApplicationMetadata, ApplicationSource, Capability, ConfigError};
 use crate::{ContextRequest, ContextRequestKind, RequestKind};
 
 #[derive(Clone, Debug, Copy)]
@@ -241,46 +246,70 @@ pub enum StellarSignedRequestPayload {
 #[contracttype]
 #[derive(Clone, Debug)]
 pub struct StellarSignedRequest {
-    pub payload: StellarSignedRequestPayload,
+    pub payload: Bytes,
     pub signature: BytesN<64>,
 }
 
 impl StellarSignedRequest {
-    pub fn new<F>(
+    pub fn new<T, F>(
         env: &Env,
-        payload: StellarSignedRequestPayload,
+        payload: T,
         sign: F,
     ) -> Result<Self, StellarError>
     where
+        T: Serialize,
         F: FnOnce(&[u8]) -> Result<ed25519_dalek::Signature, ed25519_dalek::SignatureError>,
     {
-        let request_xdr = payload.clone().to_xdr(env);
-        let std_vec: StdVec<u8> = request_xdr.into_iter().collect();
+        // let payload = payload.to_xdr(env);
+        let payload = serde_json::to_vec(&payload).unwrap();
 
-        let signature = sign(&std_vec).map_err(|_| StellarError::InvalidSignature)?;
-
+        let signature = sign(&payload).map_err(|_| StellarError::InvalidSignature)?;
+        let payload = Bytes::from_slice(env, &payload);
         Ok(Self {
             payload,
             signature: BytesN::from_array(env, &signature.to_bytes()),
         })
     }
 
-    pub fn verify(&self, env: &Env) -> Result<StellarSignedRequestPayload, StellarError> {
-        let bytes = self.payload.clone().to_xdr(env);
+    pub fn verify<'a, T, R, F>(&self, f: F) -> Result<SignerId, StellarError>
+    where
+        T: Deserialize<'a>,
+        R: IntoResult<SignerId>,
+        F: FnOnce(&T) -> R,
+        <R as IntoResult<SignerId>>::Error: Display,
+    {
+        todo!()
+        // let payload = self.payload.to_alloc_vec();
+        // let parsed = serde_json::from_slice(&payload).unwrap();
 
-        // Get signer_id based on payload type
-        let signer_id = match &self.payload {
-            StellarSignedRequestPayload::Context(req) => &req.signer_id,
-            StellarSignedRequestPayload::Proxy(req) => match req {
-                StellarProxyMutateRequest::Propose(proposal) => &proposal.author_id,
-                StellarProxyMutateRequest::Approve(approval) => &approval.signer_id,
-            },
-        };
+        // let bytes = f(&parsed)
+        //     .into_result()
+        //     .map_err(ConfigError::DerivationError).unwrap();
 
-        env.crypto()
-            .ed25519_verify(signer_id, &bytes, &self.signature);
+        // let key = bytes
+        //     .rt::<VerifyingKey>()
+        //     .map_err(ConfigError::VerificationKeyParseError).unwrap();
 
-        Ok(self.payload.clone())
+        // key.verify(bytes, &self.signature)
+        //     .map_or(Err(ConfigError::InvalidSignature), |()| Ok(parsed))
+        // let bytes = self.payload.to_xdr(env);
+
+        // let payload = StellarSignedRequestPayload::from_xdr(env, &self.payload).unwrap();
+
+        // println!("payload: {:#?}", payload);
+        // // Get signer_id based on payload type
+        // let signer_id = match &payload {
+        //     StellarSignedRequestPayload::Context(req) => &req.signer_id,
+        //     StellarSignedRequestPayload::Proxy(req) => match req {
+        //         StellarProxyMutateRequest::Propose(proposal) => &proposal.author_id,
+        //         StellarProxyMutateRequest::Approve(approval) => &approval.signer_id,
+        //     },
+        // };
+
+        // env.crypto()
+        //     .ed25519_verify(signer_id, &self.payload, &self.signature);
+
+        // Ok(payload)
     }
 }
 
@@ -324,4 +353,5 @@ pub enum StellarError {
     NotAMember = 7,
     InvalidState = 8,
     ProxyUpgradeFailed = 9,
+    InvalidRequest = 10,
 }

@@ -239,16 +239,16 @@ impl Network {
 
         if !args.is_empty() {
             let env = Env::default();
+            // Convert raw bytes to Soroban Bytes
             let env_bytes = Bytes::from_slice(&env, &args);
-            let val: Val = Val::from_xdr(&env, &env_bytes).map_err(|_| StellarError::Custom {
-                operation: ErrorOperation::Query,
-                reason: "Failed to deserialize signed request".to_owned(),
-            })?;
-            let sc_val: ScVal = val.try_into_val(&env).map_err(|_| StellarError::Custom {
-                operation: ErrorOperation::Query,
-                reason: "Failed to convert to ScVal".to_owned(),
-            })?;
-            encoded_args = Some(vec![sc_val]);
+            // Convert to array of Vals
+            let vals: soroban_sdk::Vec<ScVal> = soroban_sdk::Vec::from_xdr(&env, &env_bytes)
+                .map_err(|_| StellarError::Custom {
+                    operation: ErrorOperation::Mutate,
+                    reason: "Failed to decode XDR".to_owned(),
+                })?;
+            println!("vals mutate: {:#?}", vals);
+            encoded_args = Some(vals.iter().collect::<Vec<_>>());
         }
 
         let transaction = TransactionBuilder::new(source_account, self.network.as_str(), None)
@@ -262,6 +262,8 @@ impl Network {
             .client
             .simulate_transaction(transaction.clone(), None)
             .await;
+
+        println!("simulation_result: {:#?}", simulation_result);
 
         if let Err(err) = simulation_result {
             return Err(StellarError::Custom {

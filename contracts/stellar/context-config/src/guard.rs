@@ -2,7 +2,7 @@ use core::fmt;
 use core::ops::{Deref, DerefMut};
 
 use calimero_context_config::stellar::stellar_types::StellarApplication;
-use soroban_sdk::{contracttype, Address, BytesN, Env, Vec};
+use soroban_sdk::{contracttype, log, symbol_short, Address, BytesN, Env, Vec};
 
 /// Represents the different types of values that can be guarded
 #[contracttype]
@@ -78,6 +78,14 @@ impl Guard {
     /// # Errors
     /// Returns UnauthorizedAccess if signer is not privileged
     pub fn get(&mut self, signer_id: &BytesN<32>) -> Result<GuardHandle, UnauthorizedAccess> {
+        let env = Env::default();
+        log!(&env, "signer_id: {:?}", signer_id);
+        log!(&env, "privileged: {:?}", self.privileged);
+        env.events().publish(
+            (symbol_short!("test"), symbol_short!("increment")),
+            signer_id,
+        );
+
         if !self.privileged.contains(signer_id) {
             return Err(UnauthorizedAccess { _priv: () });
         }
