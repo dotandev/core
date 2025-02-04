@@ -1,19 +1,21 @@
 extern crate alloc;
-use std::fmt::Display;
-
 use alloc::borrow::Cow;
 use alloc::vec::Vec as StdVec;
-use ed25519_dalek::VerifyingKey;
-use crate::types::{IntoResult, SignerId};
+use std::fmt::Display;
+
 use bs58;
+use ed25519_dalek::{Verifier, VerifyingKey};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use soroban_sdk::xdr::{FromXdr, ToXdr};
 use soroban_sdk::{contracterror, contracttype, Bytes, BytesN, Env, String, Vec};
-use ed25519_dalek::Verifier;
+
 use super::StellarProxyMutateRequest;
 use crate::repr::{Repr, ReprBytes, ReprError, ReprTransmute};
-use crate::types::{Application, ApplicationMetadata, ApplicationSource, Capability, ConfigError};
+use crate::types::{
+    Application, ApplicationMetadata, ApplicationSource, Capability, ConfigError, IntoResult,
+    SignerId,
+};
 use crate::{ContextRequest, ContextRequestKind, RequestKind};
 
 #[derive(Clone, Debug, Copy)]
@@ -251,11 +253,7 @@ pub struct StellarSignedRequest {
 }
 
 impl StellarSignedRequest {
-    pub fn new<T, F>(
-        env: &Env,
-        payload: T,
-        sign: F,
-    ) -> Result<Self, StellarError>
+    pub fn new<T, F>(env: &Env, payload: T, sign: F) -> Result<Self, StellarError>
     where
         T: Serialize,
         F: FnOnce(&[u8]) -> Result<ed25519_dalek::Signature, ed25519_dalek::SignatureError>,
