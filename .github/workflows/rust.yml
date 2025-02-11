@@ -2,7 +2,6 @@ name: Rust
 
 on:
   push:
-    branches: ['master']
   pull_request:
 
 env:
@@ -64,14 +63,22 @@ jobs:
       - name: Setup rust toolchain
         run: rustup toolchain install stable --profile minimal
 
+      - run: df -h
+
       - name: Setup rust cache
         uses: Swatinem/rust-cache@v2
+
+      - run: df -h
 
       - name: Run code style checks
         uses: ./.github/actions/style
 
+      - run: df -h
+
       - name: Build
         run: cargo build --verbose
+
+      - run: df -h
 
       # Install pocket-ic for ICP Contract tests
       - name: Install PocketIC server
@@ -84,3 +91,5 @@ jobs:
           chmod +x $GITHUB_WORKSPACE/scripts/build-all-apps.sh
           chmod +x $GITHUB_WORKSPACE/scripts/test.sh
           $GITHUB_WORKSPACE/scripts/test.sh
+
+      - run: df -h
