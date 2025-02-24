@@ -25,7 +25,7 @@ pub trait EventHandler<E> {
 
 impl From<SwarmEvent<BehaviourEvent>> for FromSwarm {
     fn from(event: SwarmEvent<BehaviourEvent>) -> Self {
-        FromSwarm(event)
+        Self(event)
     }
 }
 
@@ -61,7 +61,7 @@ impl StreamHandler<FromSwarm> for EventLoop {
                 self.node_manager.do_send(NetworkEvent::ListeningOn {
                     listener_id,
                     address: address.with(Protocol::P2p(local_peer_id)),
-                })
+                });
             }
             SwarmEvent::IncomingConnection {
                 connection_id,

@@ -1,2 +1,2 @@
-pub(crate) mod command;
-pub(crate) mod stream;
+pub mod command;
+pub mod stream;

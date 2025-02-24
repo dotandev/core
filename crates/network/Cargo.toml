@@ -35,6 +35,7 @@ serde = { workspace = true, features = ["derive"] }
 thiserror.workspace = true
 tokio = { workspace = true, features = ["io-util", "macros"] }
 tokio-util = { workspace = true, features = ["codec", "compat"] }
+tokio-stream = { workspace = true, features = ["time"] }
 tracing.workspace = true
 
 calimero-primitives.workspace = true

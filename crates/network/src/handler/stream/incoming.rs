@@ -5,15 +5,13 @@ use crate::stream::Stream;
 use crate::types::NetworkEvent;
 use crate::EventLoop;
 
-// pub mod stream;
-
 #[derive(Message)]
 #[rtype(result = "()")]
-pub struct FromIncoming(Option<(PeerId, P2pStream)>);
+pub struct FromIncoming((PeerId, P2pStream));
 
-impl From<Option<(PeerId, P2pStream)>> for FromIncoming {
-    fn from(peer_stream: Option<(PeerId, P2pStream)>) -> Self {
-        FromIncoming(peer_stream)
+impl From<(PeerId, P2pStream)> for FromIncoming {
+    fn from(peer_stream: (PeerId, P2pStream)) -> Self {
+        Self(peer_stream)
     }
 }
 
@@ -23,7 +21,6 @@ impl StreamHandler<FromIncoming> for EventLoop {
     }
 
     fn handle(&mut self, FromIncoming(incoming_stream): FromIncoming, _ctx: &mut Self::Context) {
-        let incoming_stream = incoming_stream.expect("Incoming streams to be infinite.");
         self.node_manager.do_send(NetworkEvent::StreamOpened {
             peer_id: incoming_stream.0,
             stream: Box::new(Stream::new(incoming_stream.1)),

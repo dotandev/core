@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [0.4.0] - 2025-02-18
+
+- Added Stellar integration
+- Added support for aliases which can replace hash based IDs
+- Minor fixes on admin dashboard
+- Optimized e2e tests
+- Optimized release process
+- Unified release artifacts into single Github Release
+- Extracted install scripts to `install-sh` repository
+
 ## [0.3.1] - 2025-01-29
 
 - Fixed get application endpoint and the corresponding meroctl command
@@ -50,8 +60,10 @@ Integrations:
 - Starknet: reached feature parity with the NEAR implementation, allowing
   contexts to be created in association with the Starknet protocol.
 
-[unreleased]:
-  https://github.com/calimero-network/core/compare/merod-0.3.0...HEAD
+[unreleased]: https://github.com/calimero-network/core/compare/0.4.0...HEAD
+[0.4.0]: https://github.com/calimero-network/core/compare/merod-0.3.1...0.4.0
+[0.3.1]:
+  https://github.com/calimero-network/core/compare/merod-0.3.0...merod-0.3.1
 [0.3.0]:
   https://github.com/calimero-network/core/compare/merod-0.2.0...merod-0.3.0
 [0.2.0]: https://github.com/calimero-network/core/releases/tag/merod-0.2.0

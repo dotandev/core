@@ -2,18 +2,16 @@
     clippy::allow_attributes,
     reason = "Needed for lints that don't follow expect"
 )]
-use std::collections::hash_map::HashMap;
-use std::ops::DerefMut;
-use std::ptr;
 
-use actix::{Actor, Addr, AsyncContext, Context, Running};
+use actix::{Actor, Addr, Context, Running, StreamHandler};
 use calimero_utils_actix::spawn_actor;
 use client::NetworkClient;
 use config::NetworkConfig;
 use eyre::{bail, Result as EyreResult};
-use futures_util::future::OptionFuture;
 use futures_util::StreamExt;
-use handler::stream::FromStreamInner;
+use handler::stream::incoming::FromIncoming;
+use handler::stream::rendezvous::FromTick;
+use handler::stream::swarm::FromSwarm;
 use libp2p::dcutr::Behaviour as DcutrBehaviour;
 use libp2p::gossipsub::{
     Behaviour as GossipsubBehaviour, Config as GossipsubConfig, MessageAuthenticity,
@@ -36,11 +34,13 @@ use libp2p::{PeerId, StreamProtocol, SwarmBuilder};
 use libp2p_stream::{Behaviour as StreamBehaviour, IncomingStreams};
 use mock::NodeManagerMock;
 use multiaddr::Protocol;
+use std::collections::hash_map::HashMap;
 use stream::CALIMERO_STREAM_PROTOCOL;
 use tokio::sync::{mpsc, oneshot};
 use tokio::time::{interval, Duration};
 use tokio::{select, spawn};
-use tracing::warn;
+use tokio_stream::wrappers::IntervalStream;
+use tracing::{error, warn};
 
 use crate::discovery::Discovery;
 use crate::types::NetworkEvent;
@@ -192,9 +192,6 @@ fn init(
 
 pub(crate) struct EventLoop {
     swarm: Box<Swarm<Behaviour>>,
-    incoming_streams: Box<IncomingStreams>,
-    command_receiver: mpsc::Receiver<Command>,
-    event_sender: mpsc::Sender<NetworkEvent>,
     node_manager: Addr<NodeManagerMock>,
     discovery: Discovery,
     pending_dial: HashMap<PeerId, oneshot::Sender<EyreResult<Option<()>>>>,
@@ -215,9 +212,6 @@ impl EventLoop {
     ) -> Self {
         Self {
             swarm: Box::new(swarm),
-            incoming_streams: Box::new(incoming_streams),
-            command_receiver,
-            event_sender,
             node_manager: NodeManagerMock::start_default(),
             discovery,
             pending_dial: HashMap::default(),
@@ -225,27 +219,7 @@ impl EventLoop {
         }
     }
 
-    pub(crate) async fn run(mut self) {
-        let mut rendezvous_discover_tick =
-            interval(self.discovery.rendezvous_config.discovery_interval);
-
-        #[expect(clippy::redundant_pub_crate, reason = "Needed for Tokio code")]
-        loop {
-            select! {
-                // event = self.swarm.next() => {
-                //     self.handle_swarm_event(event.expect("Swarm stream to be infinite."));
-                // },
-                // incoming_stream = self.incoming_streams.next() => {
-                //     self.handle_incoming_stream(incoming_stream.expect("Incoming streams to be infinite."));
-                // },
-                // command = self.command_receiver.recv() => {
-                //     let Some(c) = command else { break };
-                //     self.handle_command(c).await;
-                // }
-                _ = rendezvous_discover_tick.tick() => self.broadcast_rendezvous_discoveries(),
-            }
-        }
-    }
+    pub(crate) async fn run(self) {}
 }
 
 #[derive(Debug)]
@@ -261,6 +235,34 @@ impl Actor for EventLoop {
         spawn_actor!(self @ EventLoop => {
             .swarm as FromSwarm
         })
+    }
+
+    fn started(&mut self, ctx: &mut Context<Self>) {
+        match self
+            .swarm
+            .behaviour()
+            .stream
+            .new_control()
+            .accept(CALIMERO_STREAM_PROTOCOL)
+        {
+            Ok(incoming_streams) => {
+                let _inoming_streams_handle = <Self as StreamHandler<FromIncoming>>::add_stream(
+                    incoming_streams.map(FromIncoming::from),
+                    ctx,
+                );
+            }
+            Err(err) => {
+                error!("Failed to setup control for stream protocol: {:?}", err);
+            }
+        };
+
+        let _ping_handle = <Self as StreamHandler<FromTick>>::add_stream(
+            IntervalStream::new(interval(
+                self.discovery.rendezvous_config.discovery_interval,
+            ))
+            .map(|_| FromTick),
+            ctx,
+        );
     }
 
     fn stopping(&mut self, _ctx: &mut Self::Context) -> Running {

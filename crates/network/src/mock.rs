@@ -13,6 +13,6 @@ impl Handler<NetworkEvent> for NodeManagerMock {
     type Result = ();
 
     fn handle(&mut self, msg: NetworkEvent, _: &mut Self::Context) {
-        println!("Handling network event with data: {:?}", msg);
+        println!("Handling network event with data: {msg:?}");
     }
 }

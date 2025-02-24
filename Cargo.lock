@@ -1248,6 +1248,7 @@ dependencies = [
  "actix",
  "bytes 1.9.0",
  "calimero-primitives",
+ "calimero-utils-actix",
  "eyre",
  "futures-util",
  "libp2p",
@@ -1257,6 +1258,7 @@ dependencies = [
  "serde",
  "thiserror 1.0.69",
  "tokio 1.41.1",
+ "tokio-stream",
  "tokio-test",
  "tokio-util 0.7.12",
  "tracing",
@@ -1438,6 +1440,7 @@ dependencies = [
 name = "calimero-server-primitives"
 version = "0.1.0"
 dependencies = [
+ "calimero-context-config",
  "calimero-node-primitives",
  "calimero-primitives",
  "camino",
@@ -1505,6 +1508,18 @@ dependencies = [
  "near-sdk",
  "near-workspaces",
  "tokio 1.41.1",
+]
+
+[[package]]
+name = "calimero-utils-actix"
+version = "0.1.0"
+dependencies = [
+ "actix",
+ "eyre",
+ "futures-util",
+ "paste",
+ "tokio 1.41.1",
+ "tokio-stream",
 ]
 
 [[package]]
@@ -5239,12 +5254,11 @@ checksum = "8452105ba047068f40ff7093dd1d9da90898e63dd61736462e9cdda6a90ad3c3"
 
 [[package]]
 name = "meroctl"
-version = "0.3.1"
+version = "0.4.0"
 dependencies = [
  "bs58 0.5.1",
  "calimero-config",
  "calimero-primitives",
- "calimero-server",
  "calimero-server-primitives",
  "camino",
  "chrono",
@@ -5268,7 +5282,7 @@ dependencies = [
 
 [[package]]
 name = "merod"
-version = "0.3.1"
+version = "0.4.0"
 dependencies = [
  "axum",
  "calimero-blobstore",
@@ -9101,9 +9115,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-stream"
-version = "0.1.16"
+version = "0.1.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4f4e6ce100d0eb49a2734f8c0812bcd324cf357d21810932c5df6b96ef2b86f1"
+checksum = "eca58d7bba4a75707817a2c44174253f9236b2d5fbd055602e9d5c07c139a047"
 dependencies = [
  "futures-core",
  "pin-project-lite 0.2.15",
