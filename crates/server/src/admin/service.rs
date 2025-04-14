@@ -123,10 +123,6 @@ pub(crate) fn setup(
             get(get_context_storage::handler),
         )
         .route(
-            "/contexts/:context_id/identities",
-            get(get_context_identities::handler),
-        )
-        .route(
             "/contexts/:context_id/identities-owned",
             get(get_context_identities::handler),
         )
@@ -181,6 +177,10 @@ pub(crate) fn setup(
         .route(
             "/contexts/:context_id/proxy-contract",
             get(get_proxy_contract_handler),
+        )
+        .route(
+            "/contexts/:context_id/identities",
+            get(get_context_identities::handler),
         );
 
     let dev_router = Router::new()

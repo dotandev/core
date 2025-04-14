@@ -452,7 +452,7 @@ impl Node {
         };
 
         if method != "init" && &*context.root_hash == &[0; 32] {
-            return Err(CallError::Uninitialized);
+            //return Err(CallError::Uninitialized);
         }
 
         if !self
